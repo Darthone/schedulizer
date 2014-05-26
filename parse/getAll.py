@@ -1,3 +1,5 @@
+#!/bin/env/python
+
 import pymongo, urllib2
 from BeautifulSoup import BeautifulSoup
 from pprint import pprint
@@ -24,7 +26,6 @@ def getColleges(url, term):
    for school in collegeSoup.findAll('a'):
       nextUrl = str(school).split('">',1)[0].replace('<a href="', '').replace('&amp;', '&')
       getSubjects(url, term)
-     
 
 def getSubjects(url, term):
    response = urllib2.urlopen(baseURL + url)
@@ -33,7 +34,6 @@ def getSubjects(url, term):
       if 'subjectDetails' in str(subject):
          nextUrl = str(subject).split('">',1)[0].replace('<a href="', '').replace('&amp;', '&')
          getClasses(nextUrl, term)
-      
    
 def getClasses(url, term):
    response = urllib2.urlopen(baseURL + url)
@@ -42,29 +42,34 @@ def getClasses(url, term):
       if 'courseDetails' in str(course) and str(course).__len__() <= 1500:
          courseD = {}
          count = 0 
-         if '34311' in course:
-            print course
-            break
+         extras = []
          for attribute in str(course).split('<td '):
-            if ', 2' in attribute or 'Final Exam' in attribute:
+            #print attribute
+            string = attribute
+            if 'Final Exam' in string:
                continue
-            string = attribute.split('">')[-1].replace('</td>', '').strip()
-            string = string.split('</tr>')[0].split('</')[0].strip() 
-            if string.startswith('<') or string == '':
+            if '</tr>' in string:
+               string = string.split('</tr>')[0]
+            string = string.split('">')[-1].replace('</td>', '').strip().replace("</a></p>", '')
+            if string.startswith('<') or string == '' or ', 20' in string:
                continue
           
             try:
-               print classAtt[count] + " " + string
-               #courseD[classAtt[count]] = string
+               courseD[classAtt[count]] = string
             except:
-               print str(count) + " " + string
-               #print str(course)
+               extras.append(string)
             count += 1
+         if count >= 10:
+            courseD['Days'] = courseD['Days'] + "  " + courseD['Instructor']
+            courseD['Time'] = courseD['Time'] + "  "+ extras[0]
+            courseD['Instructor'] = extras[1]
          pushMongo(courseD, term)   
          
 def pushMongo(din, term):
-   print '' 
-   #pprint(din)   
+   client = pymongo.MongoClient('localhost', 27017)
+   db = client[term]
+   collection = db['classes']
+   collection.insert(din)
 
 def main():
    getTerms()
