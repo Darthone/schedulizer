@@ -1,38 +1,49 @@
+#!/usr/bin/python
+
 import pymongo, urllib2
 from BeautifulSoup import BeautifulSoup
 from pprint import pprint
 
 baseURL = "https://duapp2.drexel.edu"
+tmsAppURL = "webtms_du/app"
 classAtt = ['Subject_Code', 'Course_Number', 'Instr_Type', 'Section', 'CRN', 'Course_Title', 'Days', 'Time', 'Instructor' ]
 
 def getTerms():
+   tmsURL = baseURL + tmsAppURL
    response = urllib2.urlopen("https://duapp2.drexel.edu/webtms_du/app")
    htmlSoup = BeautifulSoup(response)
+
    for div in htmlSoup.findAll('div'):
-      if "component=quarterTermDetails" in str(div):
-         url = str(div).split(' href="')[1]
-         term = (url.split('">')[1]).split('</a')[0].rsplit(' ', 1)[0].replace(' ', '')
-         url =  url.split('">')[0].replace('&amp;', '&')
-         getColleges(url, term)
+      # All divs containing Quarter/Semester info have class="term"
+      if div.get('class') == 'term':
+         href = div.find('a')
+         termName = href.getText()
+         termURL = href.get('href').replace('&amp;', '&')
+         getColleges(termURL, termName)
     
          
 def getColleges(url, term):
    response = urllib2.urlopen(baseURL + url)
    htmlSoup = BeautifulSoup(response)
+
+   # Colleges are the only hyperlinks in the left sidebar
    colleges = htmlSoup.find(id='sideLeft')
-   collegeSoup = BeautifulSoup(str(colleges))
-   for school in collegeSoup.findAll('a'):
-      nextUrl = str(school).split('">',1)[0].replace('<a href="', '').replace('&amp;', '&')
+   for school in colleges.findAll('a'):
+      schoolName = school.getText()
+      nextUrl = school.get('href').replace('&amp;', '&')
       getSubjects(url, term)
      
 
 def getSubjects(url, term):
    response = urllib2.urlopen(baseURL + url)
    htmlSoup = BeautifulSoup(response)
-   for subject in htmlSoup.findAll('a'):
-      if 'subjectDetails' in str(subject):
-         nextUrl = str(subject).split('">',1)[0].replace('<a href="', '').replace('&amp;', '&')
-         getClasses(nextUrl, term)
+
+   # The Subjects are listed in a table of class='collegePanel'
+   subjectTable = htmlSoup.find('table', 'collegePanel')
+   for subject in subjectTable.findAll('a'):
+      subjectName = subject.getText()
+      nextUrl = subject.get('href').replace('&amp;', '&')
+   getClasses(nextUrl, term)
       
    
 def getClasses(url, term):
