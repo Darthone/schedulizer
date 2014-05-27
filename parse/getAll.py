@@ -1,73 +1,95 @@
+#!/usr/bin/python
+
+"""
+   File: getAll.py
+   Author: Dario Marasco
+   Created: 2014-05-24
+
+   A simple python scraper to grab information from Drexel's term
+   master schedule and print it out.
+
+"""
+
 import pymongo, urllib2
 from BeautifulSoup import BeautifulSoup
 from pprint import pprint
 
 baseURL = "https://duapp2.drexel.edu"
-classAtt = ['Subject_Code', 'Course_Number', 'Instr_Type', 'Section', 'CRN', 'Course_Title', 'Days', 'Time', 'Instructor' ]
+classAtt = ['Subject_Code', 'Course_Number', 'Instr_Type', 'Section', 'CRN', 'Course_Title', 'Day & Time', 'Instructor' ]
+MAX_LEN = 1500 # Maximum parse length of a course attribute
 
 def getTerms():
    response = urllib2.urlopen("https://duapp2.drexel.edu/webtms_du/app")
    htmlSoup = BeautifulSoup(response)
-   for div in htmlSoup.findAll('div'):
-      if "component=quarterTermDetails" in str(div):
-         url = str(div).split(' href="')[1]
-         term = (url.split('">')[1]).split('</a')[0].rsplit(' ', 1)[0].replace(' ', '')
-         url =  url.split('">')[0].replace('&amp;', '&')
-         getColleges(url, term)
+
+   # All divs containing Quarter/Semester info have class="term"
+   for div in htmlSoup.findAll('div', 'term'):
+      href = div.find('a')
+      termName = href.getText()
+      termURL = href.get('href').replace('&amp;', '&')
+      getColleges(termURL, termName)
     
          
 def getColleges(url, term):
    response = urllib2.urlopen(baseURL + url)
    htmlSoup = BeautifulSoup(response)
+
+   # Colleges are the only hyperlinks in the left sidebar
    colleges = htmlSoup.find(id='sideLeft')
-   collegeSoup = BeautifulSoup(str(colleges))
-   for school in collegeSoup.findAll('a'):
-      nextUrl = str(school).split('">',1)[0].replace('<a href="', '').replace('&amp;', '&')
+   for school in colleges.findAll('a'):
+      schoolName = school.getText()
+      nextUrl = school.get('href').replace('&amp;', '&')
       getSubjects(url, term)
      
 
 def getSubjects(url, term):
    response = urllib2.urlopen(baseURL + url)
    htmlSoup = BeautifulSoup(response)
-   for subject in htmlSoup.findAll('a'):
-      if 'subjectDetails' in str(subject):
-         nextUrl = str(subject).split('">',1)[0].replace('<a href="', '').replace('&amp;', '&')
-         getClasses(nextUrl, term)
+
+   # The Subjects are listed in a table of class='collegePanel'
+   subjectTable = htmlSoup.find('table', 'collegePanel')
+   for subject in subjectTable.findAll('a'):
+      subjectName = subject.getText()
+      nextUrl = subject.get('href').replace('&amp;', '&')
+      getClasses(nextUrl, term)
       
    
 def getClasses(url, term):
    response = urllib2.urlopen(baseURL + url)
    htmlSoup = BeautifulSoup(response)
+
    for course in htmlSoup.findAll('tr'):
-      if 'courseDetails' in str(course) and str(course).__len__() <= 1500:
-         courseD = {}
+      if 'courseDetails' in str(course) and str(course).__len__() <= MAX_LEN:
          count = 0 
-         if '34311' in course:
-            print course
-            break
-         for attribute in str(course).split('<td '):
-            if ', 2' in attribute or 'Final Exam' in attribute:
-               continue
-            string = attribute.split('">')[-1].replace('</td>', '').strip()
-            string = string.split('</tr>')[0].split('</')[0].strip() 
-            if string.startswith('<') or string == '':
-               continue
-          
-            try:
-               print classAtt[count] + " " + string
-               #courseD[classAtt[count]] = string
-            except:
-               print str(count) + " " + string
-               #print str(course)
+
+         # All course attributes are enclosed in 'td' tags; use recursive=False
+         # because days and times are child tags, that require special handling 
+         for attribute in course.findAll('td', recursive=False):
+            if attribute.get('colspan'):
+               # Attribute is a day/time child tag
+               day = attribute.find('td')
+               time = day.findNextSibling('td')
+               print 'Day(s): %s' % day.getText()
+               print 'Time: %s' % time.getText()
+            else:
+               # Attribute is a regular tag
+               attributeString = attribute.getText().replace('&amp;', '&')
+               try:
+                  print classAtt[count] + ": " + attributeString
+               except:
+                  print str(count) + ": " + attributeString 
             count += 1
-         pushMongo(courseD, term)   
+         print ''
          
+
 def pushMongo(din, term):
    print '' 
-   #pprint(din)   
+
 
 def main():
    getTerms()
    print ''
 
-main()
+
+if __name__ == '__main__':
+   main()
