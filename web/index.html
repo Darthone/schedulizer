@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+   <meta http-equiv="Content-type" content="text/html; charset=us-ascii">
+   <meta name="viewport" content="width=device-width,initial-scale=1">
+
+   <title>Drexel Schedulizer</title>
+   <style type="text/css" title="currentStyle">
+         @import "media/css/demo_page.css";
+         @import "media/css/demo_table.css";
+   </style>
+   <script type="text/javascript" language="javascript" src="media/js/jquery.js"></script>
+   <script type="text/javascript" language="javascript" src="media/js/jquery.dataTables.js"></script>
+   <script type="text/javascript" charset="utf-8"></script>
+   <script type="text/javascript" class="init">
+   var oTable;
+   var asInitVals = new Array();
+
+   $(document).ready(function() {
+      oTable = $('#example').dataTable( {
+      "bProcessing": true,
+      "bServerSide": true,
+      "sAjaxSource": "serverside.php?term=SummerQuarter",
+      "aoColumns": [
+            { "mData": "Subject_Code", "sDefaultContent": "-" },
+            { "mData": "Course_Number", "sDefaultContent": "-" },
+            { "mData": "Instr_Type", "sDefaultContent": "-" },
+            { "mData": "Section", "sDefaultContent": "-" },
+            { "mData": "CRN", "sDefaultContent": "-" },
+            { "mData": "Course_Title", "sDefaultContent": "-" },
+            { "mData": "Days", "sDefaultContent": "-" },
+            { "mData": "Time", "sDefaultContent": "-" },
+            { "mData": "Instructor", "sDefaultContent": "-" }
+      ],
+      "oLanguage": {
+         "sSearch": "Search all columns:"
+      }
+   } );
+   
+   $("thead input").keyup( function () {
+      /* Filter on the column (the index) of this element */
+      oTable.fnFilter( this.value, $("thead input").index(this) );
+   } );
+   
+   
+   $("thead input").each( function (i) {
+      asInitVals[i] = this.value;
+   } );
+   
+   $("thead input").focus( function () {
+      if ( this.className == "search_init" )
+      {
+         this.className = "";
+         this.value = "";
+      }
+   } );
+   
+   $("thead input").blur( function (i) {
+      if ( this.value == "" )
+      {
+         this.className = "search_init";
+         this.value = asInitVals[$("thead input").index(this)];
+      }
+   } );
+
+   } );
+
+
+   </script>
+</head>
+
+<body class="wide comments example">
+
+<table id="example" class="display" cellspacing="0" width="100%">
+   <thead>
+      <tr>
+         <td><input type="text" name="search_Subject_Code" value="Search Subjects" class="search_init" /></td>
+         <td><input type="text" name="search_Course_Number" value="Search Course Numbers" class="search_init" /></td>
+         <td><input type="text" name="search_Instr_type" value="Search Class Types" class="search_init" /></td>
+         <td><input type="text" name="search_Section" value="Search Sections" class="search_init" /></td>
+         <td><input type="text" name="search_CRN" value="Search CRNs" class="search_init" /></td>
+         <td><input type="text" name="search_Course_Title" value="Search Course Titles" class="search_init" /></td>
+         <td><input type="text" name="search_Days" value="Search Days" class="search_init" /></td>
+         <td><input type="text" name="search_Time" value="Search Times" class="search_init" /></td>
+         <td><input type="text" name="search_Instructor" value="Search Instructors" class="search_init" /></td>
+      </tr>
+      <tr>                     
+         <th>Subject_Code</th> 
+         <th>Course_Number</th>
+         <th>Instr_type</th>   
+         <th>Section</th>      
+         <th>CRN</th>          
+         <th>Course_Title</th> 
+         <th>Days</th>         
+         <th>Time</th>         
+         <th>Instructor</th>   
+      </tr>                    
+   </thead>
+
+

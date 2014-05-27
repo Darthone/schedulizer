@@ -25,7 +25,7 @@ def getColleges(url, term):
    collegeSoup = BeautifulSoup(str(colleges))
    for school in collegeSoup.findAll('a'):
       nextUrl = str(school).split('">',1)[0].replace('<a href="', '').replace('&amp;', '&')
-      getSubjects(url, term)
+      getSubjects(nextUrl, term)
 
 def getSubjects(url, term):
    response = urllib2.urlopen(baseURL + url)
@@ -73,6 +73,5 @@ def pushMongo(din, term):
 
 def main():
    getTerms()
-   print ''
 
 main()
