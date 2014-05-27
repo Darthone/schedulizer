@@ -15,9 +15,8 @@ from BeautifulSoup import BeautifulSoup
 from pprint import pprint
 
 baseURL = "https://duapp2.drexel.edu"
-#classAtt = ['Subject_Code', 'Course_Number', 'Instr_Type', 'Section', 'CRN', 'Course_Title', 'Days', 'Time', 'Instructor' ]
-classAtt = ['Subject_Code', 'Course_Number', 'Instr_Type', 'Section', 'CRN', 'Course_Title', 'Time', 'Instructor' ]
-MAX_LEN = 1500
+classAtt = ['Subject_Code', 'Course_Number', 'Instr_Type', 'Section', 'CRN', 'Course_Title', 'Day & Time', 'Instructor' ]
+MAX_LEN = 1500 # Maximum parse length of a course attribute
 
 def getTerms():
    response = urllib2.urlopen("https://duapp2.drexel.edu/webtms_du/app")
@@ -63,24 +62,22 @@ def getClasses(url, term):
       if 'courseDetails' in str(course) and str(course).__len__() <= MAX_LEN:
          count = 0 
 
-         # All course data entries are enclosed in 'td' tags, use recursive=False
+         # All course attributes are enclosed in 'td' tags; use recursive=False
          # because days and times are child tags, that require special handling 
          for attribute in course.findAll('td', recursive=False):
-            # Attribute is a day/time child tag
             if attribute.get('colspan'):
+               # Attribute is a day/time child tag
                day = attribute.find('td')
                time = day.findNextSibling('td')
                print 'Day(s): %s' % day.getText()
                print 'Time: %s' % time.getText()
-               count += 1
-               continue
-
-            # Attribute is a regular tag
-            attributeString = attribute.getText().replace('&amp;', '&')
-            try:
-               print classAtt[count] + ": " + attributeString
-            except:
-               print str(count) + ": " + attributeString 
+            else:
+               # Attribute is a regular tag
+               attributeString = attribute.getText().replace('&amp;', '&')
+               try:
+                  print classAtt[count] + ": " + attributeString
+               except:
+                  print str(count) + ": " + attributeString 
             count += 1
          print ''
          
