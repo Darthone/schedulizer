@@ -5,21 +5,19 @@ from BeautifulSoup import BeautifulSoup
 from pprint import pprint
 
 baseURL = "https://duapp2.drexel.edu"
-tmsAppURL = "webtms_du/app"
-classAtt = ['Subject_Code', 'Course_Number', 'Instr_Type', 'Section', 'CRN', 'Course_Title', 'Days', 'Time', 'Instructor' ]
+#classAtt = ['Subject_Code', 'Course_Number', 'Instr_Type', 'Section', 'CRN', 'Course_Title', 'Days', 'Time', 'Instructor' ]
+classAtt = ['Subject_Code', 'Course_Number', 'Instr_Type', 'Section', 'CRN', 'Course_Title', 'Time', 'Instructor' ]
 
 def getTerms():
-   tmsURL = baseURL + tmsAppURL
    response = urllib2.urlopen("https://duapp2.drexel.edu/webtms_du/app")
    htmlSoup = BeautifulSoup(response)
 
-   for div in htmlSoup.findAll('div'):
-      # All divs containing Quarter/Semester info have class="term"
-      if div.get('class') == 'term':
-         href = div.find('a')
-         termName = href.getText()
-         termURL = href.get('href').replace('&amp;', '&')
-         getColleges(termURL, termName)
+   # All divs containing Quarter/Semester info have class="term"
+   for div in htmlSoup.findAll('div', 'term'):
+      href = div.find('a')
+      termName = href.getText()
+      termURL = href.get('href').replace('&amp;', '&')
+      getColleges(termURL, termName)
     
          
 def getColleges(url, term):
@@ -49,36 +47,37 @@ def getSubjects(url, term):
 def getClasses(url, term):
    response = urllib2.urlopen(baseURL + url)
    htmlSoup = BeautifulSoup(response)
+
    for course in htmlSoup.findAll('tr'):
       if 'courseDetails' in str(course) and str(course).__len__() <= 1500:
-         courseD = {}
+         courseDetails = {}
          count = 0 
-         if '34311' in course:
-            print course
-            break
-         for attribute in str(course).split('<td '):
-            if ', 2' in attribute or 'Final Exam' in attribute:
-               continue
-            string = attribute.split('">')[-1].replace('</td>', '').strip()
-            string = string.split('</tr>')[0].split('</')[0].strip() 
-            if string.startswith('<') or string == '':
-               continue
-          
+
+         # Does not correctly handle dates, using recursive=False does simplify
+         # the parse tree a little, but it makes it hard to identify the times
+         # and days correctly.
+         # All course data entries are enclosed in 'td' tags, use recursive=False
+         # because days and times are child tags, and make things messy
+         for attribute in course.findAll('td', recursive=False):
+            attributeString = attribute.getText()
             try:
-               print classAtt[count] + " " + string
+               print classAtt[count] + " " + attributeString
                #courseD[classAtt[count]] = string
             except:
-               print str(count) + " " + string
-               #print str(course)
+               print str(count) + " " + attributeString 
             count += 1
-         pushMongo(courseD, term)   
+         #pushMongo(courseDetails, term)   
          
+
 def pushMongo(din, term):
    print '' 
    #pprint(din)   
+
 
 def main():
    getTerms()
    print ''
 
-main()
+
+if __name__ == '__main__':
+   main()
