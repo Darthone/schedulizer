@@ -1,4 +1,4 @@
-#!/bin/env/python
+#!/usr/bin/env python
 
 import pymongo, urllib2
 from BeautifulSoup import BeautifulSoup
