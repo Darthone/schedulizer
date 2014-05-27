@@ -1,5 +1,15 @@
 #!/usr/bin/python
 
+"""
+   File: getAll.py
+   Author: Dario Marasco
+   Created: 2014-05-24
+
+   A simple python scraper to grab information from Drexel's term
+   master schedule and print it out.
+
+"""
+
 import pymongo, urllib2
 from BeautifulSoup import BeautifulSoup
 from pprint import pprint
@@ -41,7 +51,7 @@ def getSubjects(url, term):
    for subject in subjectTable.findAll('a'):
       subjectName = subject.getText()
       nextUrl = subject.get('href').replace('&amp;', '&')
-   getClasses(nextUrl, term)
+      getClasses(nextUrl, term)
       
    
 def getClasses(url, term):
@@ -50,7 +60,6 @@ def getClasses(url, term):
 
    for course in htmlSoup.findAll('tr'):
       if 'courseDetails' in str(course) and str(course).__len__() <= 1500:
-         courseDetails = {}
          count = 0 
 
          # Does not correctly handle dates, using recursive=False does simplify
@@ -59,19 +68,17 @@ def getClasses(url, term):
          # All course data entries are enclosed in 'td' tags, use recursive=False
          # because days and times are child tags, and make things messy
          for attribute in course.findAll('td', recursive=False):
-            attributeString = attribute.getText()
+            attributeString = attribute.getText().replace('&amp;', '&')
             try:
-               print classAtt[count] + " " + attributeString
-               #courseD[classAtt[count]] = string
+               print classAtt[count] + ": " + attributeString
             except:
-               print str(count) + " " + attributeString 
+               print str(count) + ": " + attributeString 
             count += 1
-         #pushMongo(courseDetails, term)   
+         print ''
          
 
 def pushMongo(din, term):
    print '' 
-   #pprint(din)   
 
 
 def main():
