@@ -17,6 +17,7 @@ from pprint import pprint
 baseURL = "https://duapp2.drexel.edu"
 #classAtt = ['Subject_Code', 'Course_Number', 'Instr_Type', 'Section', 'CRN', 'Course_Title', 'Days', 'Time', 'Instructor' ]
 classAtt = ['Subject_Code', 'Course_Number', 'Instr_Type', 'Section', 'CRN', 'Course_Title', 'Time', 'Instructor' ]
+MAX_LEN = 1500
 
 def getTerms():
    response = urllib2.urlopen("https://duapp2.drexel.edu/webtms_du/app")
@@ -59,15 +60,22 @@ def getClasses(url, term):
    htmlSoup = BeautifulSoup(response)
 
    for course in htmlSoup.findAll('tr'):
-      if 'courseDetails' in str(course) and str(course).__len__() <= 1500:
+      if 'courseDetails' in str(course) and str(course).__len__() <= MAX_LEN:
          count = 0 
 
-         # Does not correctly handle dates, using recursive=False does simplify
-         # the parse tree a little, but it makes it hard to identify the times
-         # and days correctly.
          # All course data entries are enclosed in 'td' tags, use recursive=False
-         # because days and times are child tags, and make things messy
+         # because days and times are child tags, that require special handling 
          for attribute in course.findAll('td', recursive=False):
+            # Attribute is a day/time child tag
+            if attribute.get('colspan'):
+               day = attribute.find('td')
+               time = day.findNextSibling('td')
+               print 'Day(s): %s' % day.getText()
+               print 'Time: %s' % time.getText()
+               count += 1
+               continue
+
+            # Attribute is a regular tag
             attributeString = attribute.getText().replace('&amp;', '&')
             try:
                print classAtt[count] + ": " + attributeString
